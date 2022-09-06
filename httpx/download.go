@@ -1,6 +1,8 @@
-package common
+package httpx
 
-import "log"
+import (
+	"log"
+)
 
 func Download(filePath string, urls ...string) (data []byte, err error) {
 	_ = urls[0]
