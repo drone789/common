@@ -8,21 +8,49 @@ import (
 )
 
 type User struct {
-	id   string
-	name string
-	age  int
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+type Employee struct {
+	FirstName string   `json:"firstname"`
+	LastName  string   `json:"lastname"`
+	Age       int      `json:"age"`
+	About     string   `json:"about"`
+	Interests []string `json:"interests"`
+}
+
+//创建索引
+func create() {
+	//1.使用结构体方式存入到es里面
+	e2 := Employee{"jane", "Smith", 20, "I like music", []string{"music"}}
+	put, err := esCli.Index().
+		Index("test_info").
+		Id("2").
+		BodyJson(e2).
+		Do(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("indexed %s to index %s, type %s \n", put.Id, put.Index, put.Type)
+}
+
+func TestCreateES(t *testing.T) {
+	create()
 }
 
 func TestCreateDocsByStruct(t *testing.T) {
+	//u := User{id: "201", name: "wunder201", age: 201}
 	u := User{
-		//id:   "200",
-		name: "wunder200",
-		age:  200,
+		Id:   "202",
+		Name: "W202",
+		Age:  202,
 	}
 	_, err := esCli.Index().
 		Index("index_name_02"). // 索引名称
-		Id(u.name).             // 指定文档id
-		BodyJson(u).            // 	可序列化JSON
+		Id(u.Name). // 指定文档id
+		BodyJson(u). // 	可序列化JSON
 		Do(context.Background())
 
 	if err != nil {
@@ -34,8 +62,8 @@ func TestCreateDocsByString(t *testing.T) {
 	u := `{"name":"wunder1", "age": 11,"id":"10"}`
 	_, err := esCli.Index().
 		Index("index_name"). // 索引名称
-		Id("10").            // 指定文档id
-		BodyJson(u).         // 可序列化JSON
+		Id("10"). // 指定文档id
+		BodyJson(u). // 可序列化JSON
 		Do(context.Background())
 
 	if err != nil {
@@ -55,26 +83,30 @@ func TestUpdateDoc(t *testing.T) {
 	}
 }
 
-//批量操作
+// TestBulkUpdateDocs 批量操作
 func TestBulkUpdateDocs(t *testing.T) {
 	users := []User{
 		{
-			id:   "1",
-			name: "wunder",
-			age:  18,
+			Id:   "1000",
+			Name: "1000",
+			Age:  1000,
 		},
 		{
-			id:   "2",
-			name: "sun",
-			age:  20,
+			Id:   "2000",
+			Name: "2000",
+			Age:  2000,
 		},
 	}
-	bulkRequest := esCli.Bulk() //初始化新的BulkService。
+	// 初始化新的BulkService
+	bulkService := esCli.Bulk().Index("index_name").Refresh("true")
 	for _, u := range users {
-		doc := elastic.NewBulkUpdateRequest().Id(u.id).Doc(u).Index("index_name") // 创建一个更新请求
-		bulkRequest = bulkRequest.Add(doc)                                        // 添加到批量操作
+		doc := elastic.NewBulkUpdateRequest().
+			Id(u.Id).
+			Doc(u).Upsert(u)
+		bulkService.Add(doc) // 添加到批量操作
 	}
-	_, err := bulkRequest.Do(context.Background())
+
+	_, err := bulkService.Do(context.Background())
 	if err != nil {
 		panic(err)
 	}
