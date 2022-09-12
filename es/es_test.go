@@ -49,8 +49,8 @@ func TestCreateDocsByStruct(t *testing.T) {
 	}
 	_, err := esCli.Index().
 		Index("index_name_02"). // 索引名称
-		Id(u.Name). // 指定文档id
-		BodyJson(u). // 	可序列化JSON
+		Id(u.Name).             // 指定文档id
+		BodyJson(u).            // 	可序列化JSON
 		Do(context.Background())
 
 	if err != nil {
@@ -62,8 +62,8 @@ func TestCreateDocsByString(t *testing.T) {
 	u := `{"name":"wunder1", "age": 11,"id":"10"}`
 	_, err := esCli.Index().
 		Index("index_name"). // 索引名称
-		Id("10"). // 指定文档id
-		BodyJson(u). // 可序列化JSON
+		Id("10").            // 指定文档id
+		BodyJson(u).         // 可序列化JSON
 		Do(context.Background())
 
 	if err != nil {
@@ -131,16 +131,16 @@ func TestByCondition(t *testing.T) {
 	query = elastic.NewMatchAllQuery()
 
 	// term
-	query = elastic.NewTermQuery("id", "10")
+	//query = elastic.NewTermQuery("id", "10")
 	//
 	//// terms
 	//query = elastic.NewTermsQuery("field_name", "field_value")
 	//
 	//match
-	//query = elastic.NewMatchQuery("id", "11")
+	query = elastic.NewMatchQuery("IPADDR", "10.4.250.1")
 	//
 	//// match_phrase
-	//query = elastic.NewMatchPhraseQuery("field_name", "field_value")
+	//query = elastic.NewMatchPhraseQuery("IPADDR", "10.4.250.1")
 	//
 	//// match_phrase_prefix
 	//query = elastic.NewMatchPhrasePrefixQuery("field_name", "field_value")
@@ -151,7 +151,12 @@ func TestByCondition(t *testing.T) {
 	////regexp
 	//query = elastic.NewRegexpQuery("field_name", "regexp_value")
 
-	rets, err := esCli.Search().Index("index_name").Query(query).Do(context.Background())
+	// 指定返回字段
+	rets, err := esCli.Search().
+		Index("logstash-oa_login_log*").
+		FetchSourceContext(elastic.NewFetchSourceContext(true).Include("@timestamp", "LOGINTIME", "FROMSOURCE", "USERNAME", "IPADDR")).
+		Query(query).
+		Do(context.Background())
 	if err != nil {
 		panic(err)
 	}
